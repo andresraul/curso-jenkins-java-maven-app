@@ -40,7 +40,7 @@ pipeline {
               docker.withRegistry('https://registry.hub.docker.com', 'docker-hub') {//Indicamos dónde registrarse como primer argumento y 
                                                                                     //como segundo las credenciales
                 def appmavenjenkins = docker.build("andresrmateo/mavenjenkins:${gitcommit}", ".") //creamos el contenedor undicando el nombre
-                                                                                                  //y el tap, que es el nombre del commit
+                                                                                                  //y el tag, que es el nombre del commit
                 appmavenjenkins.push() //Hacemnos el push al Docker hub
               }
             }  

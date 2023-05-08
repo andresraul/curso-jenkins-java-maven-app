@@ -1,10 +1,11 @@
 pipeline {
     agent any
     environment {
-        gitcommit = "${gitcommit}"
+        gitcommit = "${gitcommit}" //Creamos una variable globar dentro del environment que podremos utilizar globalmente y
+                                  //utilizaremos para guardar el nombre del commit
     }
     tools {
-        maven 'mavenjenkins'
+        maven 'mavenjenkins' //utilizamos el la instalación de maven que hemos definido previamente en jenkins
     }
 
     stages {
@@ -13,48 +14,50 @@ pipeline {
           steps {
             script {
               checkout scm
-              sh "git rev-parse --short HEAD > .git/commit-id"  
-              gitcommit = readFile('.git/commit-id').trim()
+              sh "git rev-parse --short HEAD > .git/commit-id" //guardamos el nombre corto del commit en el archivo commit-id
+              gitcommit = readFile('.git/commit-id').trim() //asignamos el nombre del commit a la variable que creamos anteriormente
             }
           }  
         }
         stage('Build') {
             steps {
-                sh 'mvn -B -DskipTests clean package'
+                sh 'mvn -B -DskipTests clean package'//Empaquetamos la aplicación y saltamos los tests
             }
             post {
                 success {
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true //Guardamos el jar si la construcción es exitosa
                 }
             }    
         }
         stage('Test') {
             steps {
-                sh 'mvn test'
+                sh 'mvn test'//Ejecutamos los tests
             }
             post {
                 always {
-                    junit 'target/surefire-reports/*.xml'
+                    junit 'target/surefire-reports/*.xml' //Guardamos el reporte del test
                 }
             }
         }
-        stage('Docker Build & Push') {
+        stage('Docker Build & Push') { //Iniciamos la creación del contenedor. OJO: debemos tener un archivo Dockerfile en la raíz para que se cree
           steps {
             script {  
-              docker.withRegistry('https://registry.hub.docker.com', 'docker-hub') {
-                def appmavenjenkins = docker.build("macloujulian/mavenjenkins:${gitcommit}", ".")
-                appmavenjenkins.push()
+              docker.withRegistry('https://registry.hub.docker.com', 'docker-hub') { //Indicamos dónde registrarse como primer argumento y 
+                                                                                    //como segundo las credenciales
+                def appmavenjenkins = docker.build("andresrmateo/mavenjenkins:${gitcommit}", ".") //creamos el contenedor undicando el nombre
+                                                                                                  //y el tag, que es el nombre del commit
+                appmavenjenkins.push() //Hacemnos el push al Docker hub
               }
             }  
           }  
         }
         stage('Deploy') {
             steps {
-                sh './jenkins/scripts/deliver.sh'
+                sh './jenkins/scripts/deliver.sh' //Ejecutamos el archivo que contiene el script bash para ejecutar el programa
             }
         }
     }
-    post {
+    post { //Enviamos varios mensajes por slack en la post ejecución si es exitosa, si falla y siempre.
         success { 
             slackSend message: "Build Started - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
         }
