@@ -1,14 +1,21 @@
 pipeline {
     agent {
         docker {
-            image 'maven:3-alpine'
-            args '-v /root/.m2:/root/.m2'
+            image 'maven:3-alpine' // indicamos que el agnte va a ser la imagen 3-alpine
+            args '-v /root/.m2:/root/.m2' // El argumento -v /root/.m2:/root/.m2 se utiliza en Docker para montar el directorio local /root/.m2 
+            //dentro del contenedor en la ruta /root/.m2. Este comando es comúnmente utilizado en aplicaciones que utilizan Maven como herramienta 
+            //de construcción de proyectos. La carpeta /root/.m2 es el directorio de repositorio de Maven donde se almacenan las dependencias de 
+            //Maven descargadas y los artefactos compilados. Al montar el directorio local de /root/.m2 dentro del contenedor, el contenedor puede
+            //acceder a las dependencias de Maven almacenadas en el directorio local sin necesidad de descargarlas nuevamente en el contenedor.
+            //Esto puede ser beneficioso ya que puede reducir el tiempo de construcción y acelerar el proceso de desarrollo. Además, las 
+            //dependencias descargadas en el contenedor también se pueden almacenar en el directorio local, lo que permite reutilizarlas en
+            //futuras compilaciones sin tener que volver a descargarlas.
         }
     }
     stages {
         stage('Build') {
             steps {
-                sh 'mvn -B -DskipTests clean package'
+                sh 'mvn -B -DskipTests clean package' //Iniciamos la construcción del proyecto y saltamos los test
             }
         }
         stage('Test') {
@@ -17,13 +24,13 @@ pipeline {
             }
             post {
                 always {
-                    junit 'target/surefire-reports/*.xml'
+                    junit 'target/surefire-reports/*.xml' //Publicamos los resultados de los test
                 }
             }
         }
         stage('Deliver') {
             steps {
-                sh './jenkins/scripts/deliver.sh'
+                sh './jenkins/scripts/deliver.sh' //Ejecutamos el archivo que contiene el script bash para ejecutar el programa
             }
         }
     }
